@@ -4,25 +4,10 @@ import { useTranslation } from 'react-i18next';
 interface HeaderProps {
   currentView: 'app' | 'admin';
   onChangeView: (view: 'app' | 'admin') => void;
-  onSetToken: (token: string) => void;
-  hasToken: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, onSetToken, hasToken }) => {
+export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView }) => {
   const { t, i18n } = useTranslation();
-
-  const handleAdminClick = () => {
-    if (hasToken) {
-      onChangeView('admin');
-    } else {
-      // Default token provided for ease of use as per prompt context
-      const token = prompt(t('admin.tokenPlaceholder'), "admin-secret-123");
-      if (token) {
-        onSetToken(token);
-        onChangeView('admin');
-      }
-    }
-  };
 
   return (
     <header className="h-16 bg-epiroc-dark-blue text-white flex items-center justify-between px-6 shadow-md shrink-0 z-50">
@@ -56,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, onSet
             {t('header.tracker')}
           </button>
           <button 
-             onClick={handleAdminClick}
+             onClick={() => onChangeView('admin')}
             className={`px-4 py-1 text-sm rounded transition-colors ${currentView === 'admin' ? 'bg-epiroc-yellow text-epiroc-dark-blue font-bold' : 'text-white hover:text-epiroc-yellow'}`}
           >
             {t('header.admin')}

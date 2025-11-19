@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .env.local
 package-lock.json
+
+# Database file
+machines.db
