@@ -11,9 +11,6 @@ const App: React.FC = () => {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSql, setCurrentSql] = useState<string | null>(null);
-  
-  // Admin token state
-  const [adminToken, setAdminToken] = useState<string>('');
 
   // Shared state for data interaction
   const handleQuerySuccess = (data: Machine[], sql: string) => {
@@ -26,13 +23,11 @@ const App: React.FC = () => {
       <Header 
         currentView={view} 
         onChangeView={setView} 
-        onSetToken={setAdminToken}
-        hasToken={!!adminToken}
       />
 
       <main className="flex-1 flex overflow-hidden relative">
         {view === 'admin' ? (
-          <AdminUpload adminToken={adminToken} />
+          <AdminUpload />
         ) : (
           <div className="flex w-full h-full">
             {/* Left: Chat (33%) */}

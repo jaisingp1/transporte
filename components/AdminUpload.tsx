@@ -2,11 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 
-interface AdminUploadProps {
-  adminToken: string;
-}
-
-export const AdminUpload: React.FC<AdminUploadProps> = ({ adminToken }) => {
+export const AdminUpload: React.FC = () => {
   const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -26,12 +22,6 @@ export const AdminUpload: React.FC<AdminUploadProps> = ({ adminToken }) => {
   }, []);
 
   const uploadFile = async (file: File) => {
-    if (!adminToken) {
-      setErrorMessage("Admin token is missing. Please refresh page.");
-      setStatus('error');
-      return;
-    }
-
     setStatus('uploading');
     setErrorMessage('');
     const formData = new FormData();
@@ -40,9 +30,6 @@ export const AdminUpload: React.FC<AdminUploadProps> = ({ adminToken }) => {
     try {
       const response = await fetch('/api/admin/upload', {
         method: 'POST',
-        headers: {
-          'X-Admin-Token': adminToken
-        },
         body: formData
       });
 
@@ -77,7 +64,7 @@ export const AdminUpload: React.FC<AdminUploadProps> = ({ adminToken }) => {
     } else {
       alert("Please upload only .xlsx files");
     }
-  }, [adminToken]);
+  }, []);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

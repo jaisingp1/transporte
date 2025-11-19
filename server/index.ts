@@ -131,11 +131,6 @@ const excelDateToJSDate = (serial: any): string | null => {
 
 // 1. Admin Upload
 app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
-  const token = req.headers['x-admin-token'];
-  
-  if (!token) {
-    return res.status(403).json({ error: 'Unauthorized: Token missing' });
-  }
 
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -143,12 +138,20 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
 
   const filePath = req.file.path;
 
+  console.log(`[${new Date().toISOString()}] --- ADMIN UPLOAD START ---`);
+  console.log(`[${new Date().toISOString()}] Received file: ${req.file.originalname}`);
+  console.log(`[${new Date().toISOString()}] Saved temporary file to: ${filePath}`);
+
   try {
+    console.log(`[${new Date().toISOString()}] Reading Excel file with exceljs...`);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     const worksheet = workbook.worksheets[0];
+    console.log(`[${new Date().toISOString()}] Successfully read worksheet: "${worksheet.name}" with ${worksheet.rowCount} rows.`);
+
 
     if (worksheet.rowCount < 2) {
+      console.warn(`[${new Date().toISOString()}] File has less than 2 rows. Aborting.`);
       throw new Error("Excel file is empty or missing data rows.");
     }
 
@@ -172,16 +175,25 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
       // Ensure null for empty cells
       rowsToInsert.push(rowData.map(cell => cell === undefined ? null : cell));
     }
+    console.log(`[${new Date().toISOString()}] Parsed ${rowsToInsert.length} rows from Excel.`);
 
     db.serialize(() => {
+      console.log(`[${new Date().toISOString()}] Starting database transaction...`);
       db.run("BEGIN TRANSACTION");
+
+      console.log(`[${new Date().toISOString()}] Clearing existing data from 'machines' table.`);
       db.run("DELETE FROM machines");
       db.run("DELETE FROM sqlite_sequence WHERE name='machines'");
 
       const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etd, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
       
-      rowsToInsert.forEach(row => {
-        stmt.run(row);
+      console.log(`[${new Date().toISOString()}] Inserting new rows...`);
+      rowsToInsert.forEach((row, index) => {
+        stmt.run(row, (err) => {
+          if (err) {
+            console.error(`[${new Date().toISOString()}] Error inserting row ${index + 1}:`, err);
+          }
+        });
       });
       
       stmt.finalize((err) => {
@@ -191,26 +203,30 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
           res.status(500).json({ error: 'Database insert failed.' });
           return;
         }
+        console.log(`[${new Date().toISOString()}] Finalizing statement and committing transaction...`);
         db.run("COMMIT", (commitErr) => {
           if (commitErr) {
-            console.error("Error committing transaction:", commitErr);
+            console.error(`[${new Date().toISOString()}] Error committing transaction:`, commitErr);
             res.status(500).json({ error: 'Database commit failed.' });
             return;
           }
+          console.log(`[${new Date().toISOString()}] Transaction committed successfully. Inserted ${rowsToInsert.length} rows.`);
           res.json({ success: true, rows: rowsToInsert.length });
+          console.log(`[${new Date().toISOString()}] --- ADMIN UPLOAD END ---`);
         });
       });
     });
 
   } catch (err) {
-    console.error("File Processing Error:", err);
+    console.error(`[${new Date().toISOString()}] File Processing Error:`, err);
     res.status(500).json({ error: 'Failed to process Excel file: ' + (err as Error).message });
+    console.log(`[${new Date().toISOString()}] --- ADMIN UPLOAD END (WITH ERROR) ---`);
   } finally {
-    // Cleanup the uploaded file
     try {
       fs.unlinkSync(filePath);
+      console.log(`[${new Date().toISOString()}] Cleaned up temporary file: ${filePath}`);
     } catch (e) {
-      console.error("Error deleting temp file", e);
+      console.error(`[${new Date().toISOString()}] Error deleting temp file:`, e);
     }
   }
 });
