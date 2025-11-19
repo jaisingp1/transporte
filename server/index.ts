@@ -7,6 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env.local
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -66,7 +70,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // --- Gemini Client ---
-const ai = new GoogleGenAI(process.env.API_KEY || "");
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
 
 // --- Instructions for AI ---
 const SQL_INSTRUCTIONS = `
