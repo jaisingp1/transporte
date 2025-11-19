@@ -1,3 +1,4 @@
+//server/index.ts
 import express from 'express';
 import multer from 'multer';
 import sqlite3 from 'sqlite3';
@@ -6,15 +7,15 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
-
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load environment variables from .env.local
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 // --- Configuration ---
 const PORT = 3000;
@@ -70,7 +71,12 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // --- Gemini Client ---
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  throw new Error('GEMINI_API_KEY is not set');
+}
+const genAI = new GoogleGenerativeAI(apiKey);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // --- Instructions for AI ---
 const SQL_INSTRUCTIONS = `
@@ -94,19 +100,11 @@ const excelDateToJSDate = (excelValue: any): string | null => {
     return null;
   }
 
-  // Log the type and value for debugging
-  console.log(`[DATE PARSING] Input: "${excelValue}", Type: ${typeof excelValue}`);
-
   // Case 1: Value is already a JavaScript Date object
   if (excelValue instanceof Date) {
-    // Check if the date is valid
     if (!isNaN(excelValue.getTime())) {
-      const iso = excelValue.toISOString();
-      const formatted = iso.split('T')[0];
-      console.log(`[DATE PARSING] Output (from Date object): "${formatted}"`);
-      return formatted;
+      return excelValue.toISOString().split('T')[0];
     }
-    console.warn(`[DATE PARSING] Invalid Date object received.`);
     return null;
   }
 
@@ -114,37 +112,26 @@ const excelDateToJSDate = (excelValue: any): string | null => {
   if (typeof excelValue === 'string') {
     const trimmed = excelValue.trim();
     if (trimmed.toLowerCase().includes('confirmar')) {
-      console.log(`[DATE PARSING] Output (from string 'confirmar'): null`);
       return null;
     }
-
-    // Attempt to parse various string formats, like mm/dd/yyyy
     const date = new Date(trimmed);
     if (!isNaN(date.getTime())) {
-      // It's a valid date string that the Date constructor could parse
       const year = date.getUTCFullYear();
       const month = String(date.getUTCMonth() + 1).padStart(2, '0');
       const day = String(date.getUTCDate()).padStart(2, '0');
-      const formatted = `${year}-${month}-${day}`;
-      console.log(`[DATE PARSING] Output (from string): "${formatted}"`);
-      return formatted;
+      return `${year}-${month}-${day}`;
     }
   }
 
   // Case 3: Value is a number (Excel Serial Date)
   if (typeof excelValue === 'number') {
     if (excelValue < 35000) { // Approx check for dates after the year 2000
-        console.log(`[DATE PARSING] Output (from number < 35000): null`);
         return null;
     }
     try {
-      // Convert Excel serial date to JS date
       const date = new Date(Math.round((excelValue - 25569) * 86400 * 1000));
       if (!isNaN(date.getTime())) {
-        const iso = date.toISOString();
-        const formatted = iso.split('T')[0];
-        console.log(`[DATE PARSING] Output (from number): "${formatted}"`);
-        return formatted;
+        return date.toISOString().split('T')[0];
       }
     } catch (e) {
       console.error(`[DATE PARSING] Error converting Excel number to date:`, e);
@@ -152,7 +139,6 @@ const excelDateToJSDate = (excelValue: any): string | null => {
     }
   }
   
-  console.warn(`[DATE PARSING] Could not parse value. Returning null.`);
   return null;
 };
 
@@ -160,32 +146,25 @@ const excelDateToJSDate = (excelValue: any): string | null => {
 
 // 1. Admin Upload
 app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
-
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   const filePath = req.file.path;
-
-  console.log(`[${new Date().toISOString()}] --- ADMIN UPLOAD START ---`);
-  console.log(`[${new Date().toISOString()}] Received file: ${req.file.originalname}`);
-  console.log(`[${new Date().toISOString()}] Saved temporary file to: ${filePath}`);
+  const logPrefix = `[${new Date().toISOString()}]`;
+  console.log(`${logPrefix} --- ADMIN UPLOAD START ---`);
+  console.log(`${logPrefix} Received file: ${req.file.originalname}`);
 
   try {
-    console.log(`[${new Date().toISOString()}] Reading Excel file with exceljs...`);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     const worksheet = workbook.worksheets[0];
-    console.log(`[${new Date().toISOString()}] Successfully read worksheet: "${worksheet.name}" with ${worksheet.rowCount} rows.`);
-
 
     if (worksheet.rowCount < 2) {
-      console.warn(`[${new Date().toISOString()}] File has less than 2 rows. Aborting.`);
       throw new Error("Excel file is empty or missing data rows.");
     }
 
-    const rowsToInsert: any[] = [];
-    // Skip header row (index 1), start from 2
+    const rowsToInsert = [];
     for (let i = 2; i <= worksheet.rowCount; i++) {
       const row = worksheet.getRow(i);
       const rowData = [
@@ -201,62 +180,64 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
         row.getCell(10).value, // status
         row.getCell(11).value  // bl
       ];
-      // Ensure null for empty cells
       rowsToInsert.push(rowData.map(cell => cell === undefined ? null : cell));
     }
-    console.log(`[${new Date().toISOString()}] Parsed ${rowsToInsert.length} rows from Excel.`);
+    console.log(`${logPrefix} Parsed ${rowsToInsert.length} rows from Excel.`);
 
-    db.serialize(() => {
-      console.log(`[${new Date().toISOString()}] Starting database transaction...`);
-      db.run("BEGIN TRANSACTION");
+    await new Promise<void>((resolve, reject) => {
+      db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        db.run("DELETE FROM machines");
+        db.run("DELETE FROM sqlite_sequence WHERE name='machines'");
 
-      console.log(`[${new Date().toISOString()}] Clearing existing data from 'machines' table.`);
-      db.run("DELETE FROM machines");
-      db.run("DELETE FROM sqlite_sequence WHERE name='machines'");
+        const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etd, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
-      const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etd, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-      
-      console.log(`[${new Date().toISOString()}] Inserting new rows...`);
-      rowsToInsert.forEach((row, index) => {
-        stmt.run(row, (err) => {
-          if (err) {
-            console.error(`[${new Date().toISOString()}] Error inserting row ${index + 1}:`, err);
-          }
+        rowsToInsert.forEach((row) => {
+          stmt.run(row, (err) => {
+            if (err) {
+              console.error(`${logPrefix} Error inserting row:`, err);
+              db.run("ROLLBACK");
+              reject(err);
+            }
+          });
         });
-      });
-      
-      stmt.finalize((err) => {
-        if (err) {
-          db.run("ROLLBACK");
-          console.error("Error finalizing statement:", err);
-          res.status(500).json({ error: 'Database insert failed.' });
-          return;
-        }
-        console.log(`[${new Date().toISOString()}] Finalizing statement and committing transaction...`);
-        db.run("COMMIT", (commitErr) => {
-          if (commitErr) {
-            console.error(`[${new Date().toISOString()}] Error committing transaction:`, commitErr);
-            res.status(500).json({ error: 'Database commit failed.' });
+
+        stmt.finalize((err) => {
+          if (err) {
+            console.error(`${logPrefix} Error finalizing statement:`, err);
+            db.run("ROLLBACK");
+            reject(err);
             return;
           }
-          console.log(`[${new Date().toISOString()}] Transaction committed successfully. Inserted ${rowsToInsert.length} rows.`);
-          res.json({ success: true, rows: rowsToInsert.length });
-          console.log(`[${new Date().toISOString()}] --- ADMIN UPLOAD END ---`);
+          db.run("COMMIT", (commitErr) => {
+            if (commitErr) {
+              console.error(`${logPrefix} Error committing transaction:`, commitErr);
+              db.run("ROLLBACK");
+              reject(commitErr);
+            } else {
+              console.log(`${logPrefix} Transaction committed successfully. Inserted ${rowsToInsert.length} rows.`);
+              resolve();
+            }
+          });
         });
       });
     });
 
+    res.json({ success: true, rows: rowsToInsert.length });
+    console.log(`${logPrefix} --- ADMIN UPLOAD END ---`);
+
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] File Processing Error:`, err);
+    console.error(`${logPrefix} File Processing Error:`, err);
     res.status(500).json({ error: 'Failed to process Excel file: ' + (err as Error).message });
-    console.log(`[${new Date().toISOString()}] --- ADMIN UPLOAD END (WITH ERROR) ---`);
+    console.log(`${logPrefix} --- ADMIN UPLOAD END (WITH ERROR) ---`);
   } finally {
-    try {
-      fs.unlinkSync(filePath);
-      console.log(`[${new Date().toISOString()}] Cleaned up temporary file: ${filePath}`);
-    } catch (e) {
-      console.error(`[${new Date().toISOString()}] Error deleting temp file:`, e);
-    }
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error(`${logPrefix} Error deleting temp file:`, err);
+      } else {
+        console.log(`${logPrefix} Cleaned up temporary file: ${filePath}`);
+      }
+    });
   }
 });
 
@@ -270,20 +251,18 @@ app.post('/api/query', async (req, res) => {
     // Step 1: Generate SQL using Gemini
     const sqlPrompt = `${SQL_INSTRUCTIONS}\nQuestion: "${question}"\nSQL:`;
     
-    const sqlResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ parts: [{ text: sqlPrompt }] }],
-    });
-    
-    let sql = sqlResponse.response.text().trim();
+    const result = await model.generateContent(sqlPrompt);
+    const sqlResponse = result.response;
+    let sql = sqlResponse.text().trim();
     
     // Strip markdown block if present
     sql = sql.replace(/```sql/g, '').replace(/```/g, '').trim();
     console.log(`[AI] Generated SQL: ${sql}`);
 
     // Validate SQL
-    if (!sql.toLowerCase().startsWith('select')) {
-      throw new Error('AI generated potentially unsafe SQL');
+    const trimmedSql = sql.trim().toLowerCase();
+    if (!trimmedSql.startsWith('select') || trimmedSql.split(';').length > 1) {
+      throw new Error('AI generated potentially unsafe SQL. Only single SELECT statements are allowed.');
     }
 
     // Execute SQL
@@ -305,11 +284,9 @@ app.post('/api/query', async (req, res) => {
         Task: Answer the user's question naturally based ONLY on the data provided. Be concise.
         `;
         
-        const explanationResponse = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [{ parts: [{ text: contextPrompt }] }],
-        });
-        directAnswer = explanationResponse.response.text();
+        const explanationResult = await model.generateContent(contextPrompt);
+        const explanationResponse = explanationResult.response;
+        directAnswer = explanationResponse.text();
       }
 
       res.json({
