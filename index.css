@@ -1,0 +1,25 @@
+:root {
+  --color-epiroc-grey: rgb(66, 85, 99);
+  --color-epiroc-yellow: rgb(255, 199, 44);
+  --color-epiroc-dark-grey: rgb(119, 116, 110);
+  --color-epiroc-medium-grey: rgb(180, 180, 170);
+  --color-epiroc-light-grey: rgb(236, 235, 228);
+  --color-epiroc-dark-blue: rgb(0, 30, 50);
+  --color-epiroc-violet: rgb(97, 44, 81);
+  --color-epiroc-light-blue: rgb(72, 169, 197);
+  --color-epiroc-red: rgb(183, 49, 44);
+  --color-epiroc-orange: rgb(216, 96, 24);
+  --color-epiroc-green: rgb(76, 140, 43);
+  --color-epiroc-electric-green: rgb(134, 200, 188);
+  --color-epiroc-dark-yellow: rgb(230, 179, 39);
+  --color-epiroc-dark-red: rgb(163, 40, 35);
+  --color-epiroc-dark-green: rgb(66, 120, 33);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: var(--color-epiroc-dark-blue);
+}

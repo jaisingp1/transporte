@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Epiroc Machine Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              epiroc: {
+                grey: 'var(--color-epiroc-grey)',
+                yellow: 'var(--color-epiroc-yellow)',
+                'dark-grey': 'var(--color-epiroc-dark-grey)',
+                'medium-grey': 'var(--color-epiroc-medium-grey)',
+                'light-grey': 'var(--color-epiroc-light-grey)',
+                'dark-blue': 'var(--color-epiroc-dark-blue)',
+                violet: 'var(--color-epiroc-violet)',
+                'light-blue': 'var(--color-epiroc-light-blue)',
+                red: 'var(--color-epiroc-red)',
+                orange: 'var(--color-epiroc-orange)',
+                green: 'var(--color-epiroc-green)',
+                'electric-green': 'var(--color-epiroc-electric-green)',
+                'dark-yellow': 'var(--color-epiroc-dark-yellow)',
+                'dark-red': 'var(--color-epiroc-dark-red)',
+                'dark-green': 'var(--color-epiroc-dark-green)',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      /* Custom Scrollbar for Chat */
+      .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+      .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+      .scrollbar-thin::-webkit-scrollbar-thumb { background-color: var(--color-epiroc-medium-grey); border-radius: 20px; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "xlsx": "https://aistudiocdn.com/xlsx@^0.18.5",
+    "react-i18next": "https://aistudiocdn.com/react-i18next@^16.3.4",
+    "i18next": "https://aistudiocdn.com/i18next@^25.6.3",
+    "express": "https://aistudiocdn.com/express@^5.1.0",
+    "multer": "https://aistudiocdn.com/multer@^2.0.2",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "sqlite3": "https://aistudiocdn.com/sqlite3@^5.1.7",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "fs": "https://aistudiocdn.com/fs@^0.0.1-security",
+    "url": "https://aistudiocdn.com/url@^0.11.4",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

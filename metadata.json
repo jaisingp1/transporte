@@ -1,0 +1,5 @@
+{
+  "name": "Epiroc Machine Tracker",
+  "description": "Consultor logístico inteligente para el seguimiento de maquinaria Epiroc en tránsito.",
+  "requestFramePermissions": []
+}
