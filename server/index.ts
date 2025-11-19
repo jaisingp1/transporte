@@ -66,7 +66,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // --- Gemini Client ---
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI(process.env.API_KEY || "");
 
 // --- Instructions for AI ---
 const SQL_INSTRUCTIONS = `
@@ -85,45 +85,70 @@ Rules:
 
 // --- Helper Functions ---
 
-const excelDateToJSDate = (serial: any): string | null => {
-  if (!serial) return null;
-  
-  // Handle string dates
-  if (typeof serial === 'string') {
-      const trimmed = serial.trim();
-      // Strict requirement: "Por confirmar" -> NULL
-      if (trimmed.toLowerCase().includes('confirmar')) {
-        return null;
-      }
-
-      // Try to parse mm/dd/yyyy to YYYY-MM-DD
-      const datePattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-      const match = trimmed.match(datePattern);
-      
-      if (match) {
-          const month = match[1].padStart(2, '0');
-          const day = match[2].padStart(2, '0');
-          const year = match[3];
-          return `${year}-${month}-${day}`;
-      }
-      return null;
+const excelDateToJSDate = (excelValue: any): string | null => {
+  if (!excelValue) {
+    return null;
   }
-  
-  // Handle Excel Serial Date
-  if (typeof serial === 'number') {
-    try {
-      // Excel epoch starts Dec 30 1899
-      // Approx check for valid date range (> year 2000) to avoid garbage numbers
-      if (serial < 35000) return null; 
 
-      const date = new Date(Math.round((serial - 25569) * 86400 * 1000));
-      const iso = date.toISOString(); 
-      return iso.split('T')[0];
+  // Log the type and value for debugging
+  console.log(`[DATE PARSING] Input: "${excelValue}", Type: ${typeof excelValue}`);
+
+  // Case 1: Value is already a JavaScript Date object
+  if (excelValue instanceof Date) {
+    // Check if the date is valid
+    if (!isNaN(excelValue.getTime())) {
+      const iso = excelValue.toISOString();
+      const formatted = iso.split('T')[0];
+      console.log(`[DATE PARSING] Output (from Date object): "${formatted}"`);
+      return formatted;
+    }
+    console.warn(`[DATE PARSING] Invalid Date object received.`);
+    return null;
+  }
+
+  // Case 2: Value is a string
+  if (typeof excelValue === 'string') {
+    const trimmed = excelValue.trim();
+    if (trimmed.toLowerCase().includes('confirmar')) {
+      console.log(`[DATE PARSING] Output (from string 'confirmar'): null`);
+      return null;
+    }
+
+    // Attempt to parse various string formats, like mm/dd/yyyy
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) {
+      // It's a valid date string that the Date constructor could parse
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const formatted = `${year}-${month}-${day}`;
+      console.log(`[DATE PARSING] Output (from string): "${formatted}"`);
+      return formatted;
+    }
+  }
+
+  // Case 3: Value is a number (Excel Serial Date)
+  if (typeof excelValue === 'number') {
+    if (excelValue < 35000) { // Approx check for dates after the year 2000
+        console.log(`[DATE PARSING] Output (from number < 35000): null`);
+        return null;
+    }
+    try {
+      // Convert Excel serial date to JS date
+      const date = new Date(Math.round((excelValue - 25569) * 86400 * 1000));
+      if (!isNaN(date.getTime())) {
+        const iso = date.toISOString();
+        const formatted = iso.split('T')[0];
+        console.log(`[DATE PARSING] Output (from number): "${formatted}"`);
+        return formatted;
+      }
     } catch (e) {
+      console.error(`[DATE PARSING] Error converting Excel number to date:`, e);
       return null;
     }
   }
   
+  console.warn(`[DATE PARSING] Could not parse value. Returning null.`);
   return null;
 };
 
@@ -243,13 +268,14 @@ app.post('/api/query', async (req, res) => {
     
     const sqlResponse = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: sqlPrompt,
+      contents: [{ parts: [{ text: sqlPrompt }] }],
     });
     
-    let sql = sqlResponse.text.trim();
+    let sql = sqlResponse.response.text().trim();
     
     // Strip markdown block if present
     sql = sql.replace(/```sql/g, '').replace(/```/g, '').trim();
+    console.log(`[AI] Generated SQL: ${sql}`);
 
     // Validate SQL
     if (!sql.toLowerCase().startsWith('select')) {
@@ -277,9 +303,9 @@ app.post('/api/query', async (req, res) => {
         
         const explanationResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: contextPrompt,
+            contents: [{ parts: [{ text: contextPrompt }] }],
         });
-        directAnswer = explanationResponse.text;
+        directAnswer = explanationResponse.response.text();
       }
 
       res.json({
