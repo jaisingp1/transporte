@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import sqlite3 from 'sqlite3';
-import * as xlsx from 'xlsx';
+import ExcelJS from 'exceljs';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
@@ -130,81 +130,88 @@ const excelDateToJSDate = (serial: any): string | null => {
 // --- Routes ---
 
 // 1. Admin Upload
-app.post('/api/admin/upload', upload.single('file'), (req, res) => {
+app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
   const token = req.headers['x-admin-token'];
   
-  // Simple token check (in real app, use env var)
   if (!token) {
     return res.status(403).json({ error: 'Unauthorized: Token missing' });
   }
 
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const filePath = req.file.path;
 
   try {
-    const filePath = req.file.path;
-    const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    
-    const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    const worksheet = workbook.worksheets[0];
 
-    if (data.length < 2) {
-         throw new Error("Excel file is empty or missing data rows.");
+    if (worksheet.rowCount < 2) {
+      throw new Error("Excel file is empty or missing data rows.");
+    }
+
+    const rowsToInsert: any[] = [];
+    // Skip header row (index 1), start from 2
+    for (let i = 2; i <= worksheet.rowCount; i++) {
+      const row = worksheet.getRow(i);
+      const rowData = [
+        row.getCell(1).value, // customs
+        row.getCell(2).value, // reference
+        row.getCell(3).value || 'Unknown Machine', // machine
+        row.getCell(4).value, // pn
+        excelDateToJSDate(row.getCell(5).value), // etd
+        excelDateToJSDate(row.getCell(6).value), // eta_port
+        excelDateToJSDate(row.getCell(7).value), // eta_epiroc
+        row.getCell(8).value, // ship
+        row.getCell(9).value, // division
+        row.getCell(10).value, // status
+        row.getCell(11).value  // bl
+      ];
+      // Ensure null for empty cells
+      rowsToInsert.push(rowData.map(cell => cell === undefined ? null : cell));
     }
 
     db.serialize(() => {
       db.run("BEGIN TRANSACTION");
-      
       db.run("DELETE FROM machines");
       db.run("DELETE FROM sqlite_sequence WHERE name='machines'");
 
       const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etd, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-
-      let insertedCount = 0;
-      // Skip header (row 0), start at 1
-      for (let i = 1; i < data.length; i++) {
-        const row: any = data[i];
-        // Skip completely empty rows
-        if (!row || row.length === 0) continue;
-
-        try {
-          // Map by index strictly A=0 -> K=10
-          stmt.run(
-            row[0] || null, // customs
-            row[1] || null, // reference
-            row[2] || 'Unknown Machine', // machine
-            row[3] || null, // pn
-            excelDateToJSDate(row[4]), // etd
-            excelDateToJSDate(row[5]), // eta_port
-            excelDateToJSDate(row[6]), // eta_epiroc
-            row[7] || null, // ship
-            row[8] || null, // division
-            row[9] || null, // status
-            row[10] || null // bl
-          );
-          insertedCount++;
-        } catch (rowError) {
-          console.error(`Error inserting row ${i + 1}:`, rowError);
+      
+      rowsToInsert.forEach(row => {
+        stmt.run(row);
+      });
+      
+      stmt.finalize((err) => {
+        if (err) {
+          db.run("ROLLBACK");
+          console.error("Error finalizing statement:", err);
+          res.status(500).json({ error: 'Database insert failed.' });
+          return;
         }
-      }
-      stmt.finalize();
-      db.run("COMMIT");
-      
-      // Cleanup file
-      try {
-        fs.unlinkSync(filePath);
-      } catch(e) { console.error("Error deleting temp file", e); }
-      
-      res.json({ success: true, rows: insertedCount });
+        db.run("COMMIT", (commitErr) => {
+          if (commitErr) {
+            console.error("Error committing transaction:", commitErr);
+            res.status(500).json({ error: 'Database commit failed.' });
+            return;
+          }
+          res.json({ success: true, rows: rowsToInsert.length });
+        });
+      });
     });
 
   } catch (err) {
     console.error("File Processing Error:", err);
-    // Try to clean up if error
-    if (req.file && req.file.path) {
-        try { fs.unlinkSync(req.file.path); } catch(e) {}
-    }
     res.status(500).json({ error: 'Failed to process Excel file: ' + (err as Error).message });
+  } finally {
+    // Cleanup the uploaded file
+    try {
+      fs.unlinkSync(filePath);
+    } catch (e) {
+      console.error("Error deleting temp file", e);
+    }
   }
 });
 
