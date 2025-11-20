@@ -39,9 +39,9 @@ const initDB = () => {
       reference TEXT,
       machine TEXT NOT NULL,
       pn TEXT,
-      etd TEXT,
-      eta_port TEXT,
-      eta_epiroc TEXT,
+      etb DATE,
+      eta_port DATE,
+      eta_epiroc DATE,
       ship TEXT,
       division TEXT,
       status TEXT,
@@ -160,7 +160,7 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
         row.getCell(2).value, // reference
         row.getCell(3).value || 'Unknown Machine', // machine
         row.getCell(4).value, // pn
-        excelDateToJSDate(row.getCell(5).value), // etd
+        excelDateToJSDate(row.getCell(5).value), // etb
         excelDateToJSDate(row.getCell(6).value), // eta_port
         excelDateToJSDate(row.getCell(7).value), // eta_epiroc
         row.getCell(8).value, // ship
@@ -174,11 +174,15 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
 
     await new Promise<void>((resolve, reject) => {
       db.serialize(() => {
-        db.run("BEGIN TRANSACTION");
-        db.run("DELETE FROM machines");
-        db.run("DELETE FROM sqlite_sequence WHERE name='machines'");
+        // Drop the table to ensure schema changes are applied
+        db.run("DROP TABLE IF EXISTS machines");
 
-        const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etd, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+        // Re-create the table using the centralized function
+        initDB();
+
+        // Insert new data in a transaction
+        db.run("BEGIN TRANSACTION");
+        const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etb, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
         rowsToInsert.forEach((row) => {
           stmt.run(row, (err) => {
