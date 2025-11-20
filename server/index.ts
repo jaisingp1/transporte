@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
+import fetch from 'node-fetch';
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
