@@ -186,7 +186,6 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
             <FileSpreadsheet size={14} />
             {t('data.export')}
           </button>
-        </div>
 
           <div className="flex bg-epiroc-light-grey rounded p-0.5">
             <button 
