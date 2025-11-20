@@ -1,18 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatMessage, Machine, QueryResponse } from '../types';
-import { Send } from 'lucide-react';
+import { Send, RefreshCw } from 'lucide-react';
 
 interface ChatAreaProps {
-  onQuerySuccess: (data: Machine[], sql: string) => void;
+  onQuerySuccess: (data: Machine[], sql: string | null) => void;
   setIsLoading: (loading: boolean) => void;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading }) => {
   const { t, i18n } = useTranslation();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'init', role: 'assistant', content: t('chat.welcome'), timestamp: Date.now() }
-  ]);
+  const getInitialMessage = () => ({ id: 'init', role: 'assistant' as const, content: t('chat.welcome'), timestamp: Date.now() });
+
+  const [messages, setMessages] = useState<ChatMessage[]>([getInitialMessage()]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -20,9 +20,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
   useEffect(() => {
     // Update welcome message when language changes if it's the only message
     if (messages.length === 1 && messages[0].id === 'init') {
-        setMessages([{ id: 'init', role: 'assistant', content: t('chat.welcome'), timestamp: Date.now() }]);
+        setMessages([getInitialMessage()]);
     }
-  }, [t, i18n.language, messages.length]);
+  }, [t, i18n.language]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,6 +31,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
   useEffect(() => {
     scrollToBottom();
   }, [messages, isThinking]);
+
+  const handleReset = () => {
+    setMessages([getInitialMessage()]);
+    onQuerySuccess([], null); // Clear data area
+  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -101,38 +106,54 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-        {messages.map((msg) => (
-          <div 
-            key={msg.id} 
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div 
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm whitespace-pre-wrap ${
-                msg.role === 'user' 
-                  ? 'bg-epiroc-yellow text-epiroc-dark-blue font-medium rounded-tr-none' 
-                  : msg.isError 
-                    ? 'bg-epiroc-red text-white rounded-tl-none'
-                    : 'bg-epiroc-light-grey text-epiroc-dark-blue rounded-tl-none border border-epiroc-medium-grey'
-              }`}
-            >
-              {msg.content}
-            </div>
-          </div>
-        ))}
-        {isThinking && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-epiroc-medium-grey text-epiroc-grey rounded-2xl rounded-tl-none px-4 py-2 text-sm shadow-sm italic flex items-center gap-2">
-              <span className="animate-pulse w-2 h-2 bg-epiroc-yellow rounded-full"></span>
-              {t('chat.thinking')}
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+    <div className="flex flex-col h-full bg-white">
+      {/* Chat Header */}
+      <div className="h-12 border-b border-epiroc-medium-grey flex items-center justify-between px-4 flex-shrink-0">
+        <h2 className="text-lg font-bold text-epiroc-dark-blue">{t('chat.title')}</h2>
+        <button 
+          onClick={handleReset}
+          className="text-epiroc-grey hover:text-epiroc-dark-blue transition-colors"
+          title={t('chat.reset')}
+        >
+          <RefreshCw size={18} />
+        </button>
       </div>
 
-      <div className="p-4 bg-white border-t border-epiroc-medium-grey">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 space-y-4 scrollbar-thin">
+          {messages.map((msg) => (
+            <div 
+              key={msg.id} 
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm whitespace-pre-wrap ${
+                  msg.role === 'user' 
+                    ? 'bg-epiroc-yellow text-epiroc-dark-blue font-medium rounded-tr-none' 
+                    : msg.isError 
+                      ? 'bg-epiroc-red text-white rounded-tl-none'
+                      : 'bg-white text-epiroc-dark-blue rounded-tl-none border border-epiroc-medium-grey'
+                }`}
+              >
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {isThinking && (
+            <div className="flex justify-start">
+              <div className="bg-white border border-epiroc-medium-grey text-epiroc-grey rounded-2xl rounded-tl-none px-4 py-2 text-sm shadow-sm italic flex items-center gap-2">
+                <span className="animate-pulse w-2 h-2 bg-epiroc-yellow rounded-full"></span>
+                {t('chat.thinking')}
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="p-4 bg-white border-t border-epiroc-medium-grey flex-shrink-0">
         <div className="relative flex items-center">
           <input 
             type="text"

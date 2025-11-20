@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [currentSql, setCurrentSql] = useState<string | null>(null);
 
   // Shared state for data interaction
-  const handleQuerySuccess = (data: Machine[], sql: string) => {
+  const handleQuerySuccess = (data: Machine[], sql: string | null) => {
     setMachines(data);
     setCurrentSql(sql);
   };
@@ -31,7 +31,7 @@ const App: React.FC = () => {
         ) : (
           <div className="flex w-full h-full">
             {/* Left: Chat (33%) */}
-            <div className="w-1/3 border-r border-epiroc-medium-grey bg-white flex flex-col shadow-lg z-10">
+            <div className="w-1/3 border-r border-epiroc-medium-grey bg-white flex flex-col shadow-lg z-10 overflow-hidden">
               <ChatArea 
                 onQuerySuccess={handleQuerySuccess}
                 setIsLoading={setIsLoading}

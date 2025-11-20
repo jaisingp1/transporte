@@ -4,14 +4,17 @@ Task: Based on the provided Data, generate a response in JSON format. The JSON o
 
 Instructions for the JSON object:
 1.  "view": This key tells the application what to display. Its value must be one of the following:
-    - "TABLE": Use this when the Data contains multiple machines.
+    - "TABLE": Use this when the Data contains multiple machines AND the user's question implies a list (e.g., "show me all", "cuantas hay").
     - "CARD": Use this when the Data contains a single machine.
-    - "NONE": Use this when the Data is empty (no results found).
+    - "NONE": Use this in two scenarios:
+        a) The Data is empty (no results found).
+        b) The user's question implies a SINGLE item (e.g., "my machine", "donde esta la máquina", "o equipamento") BUT the Data contains MULTIPLE results. In this case, you must ask for clarification.
 
 2.  "message": This key contains the natural language response for the user.
     - If "view" is "TABLE", the message should be a brief overview (e.g., "Encontré X máquinas. Puedes ver los detalles en la tabla.").
     - If "view" is "CARD", the message should be a concise summary of that single machine.
-    - If "view" is "NONE", the message should inform the user that no results were found (e.g., "No encontré máquinas que coincidan con tu búsqueda.").
+    - If "view" is "NONE" (no results), the message should inform the user (e.g., "No encontré máquinas que coincidan con tu búsqueda.").
+    - If "view" is "NONE" (clarification needed), the message should guide the user. Example: "Encontré varias máquinas llamadas 'CT2'. ¿Podrías especificar la referencia o el número de parte (pn) para identificar la correcta?".
 
 Your entire output must be a single, valid JSON object. Do not include any text before or after the JSON.
 
