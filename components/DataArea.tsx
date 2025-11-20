@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Machine } from '../types';
-import { LayoutGrid, Table as TableIcon, Ship, MapPin, Anchor } from 'lucide-react';
+import { LayoutGrid, Table as TableIcon, Ship, MapPin, Anchor, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface DataAreaProps {
   machines: Machine[];
@@ -9,9 +9,14 @@ interface DataAreaProps {
   sql: string | null;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [sortColumn, setSortColumn] = useState<keyof Machine>('machine');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(0);
   const [visibleColumns, setVisibleColumns] = useState({
     machine: true,
     customs: true,
@@ -34,6 +39,43 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
       setViewMode('table');
     }
   }, [machines]);
+
+  const handleSort = (column: keyof Machine) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+    setCurrentPage(0);
+  };
+
+  const sortedMachines = useMemo(() => {
+    const sorted = [...machines].sort((a, b) => {
+      const aVal = a[sortColumn];
+      const bVal = b[sortColumn];
+
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return aVal.localeCompare(bVal);
+      }
+
+      if (aVal < bVal) return -1;
+      if (aVal > bVal) return 1;
+      return 0;
+    });
+
+    return sortDirection === 'asc' ? sorted : sorted.reverse();
+  }, [machines, sortColumn, sortDirection]);
+
+  const paginatedMachines = useMemo(() => {
+    const startIndex = currentPage * ITEMS_PER_PAGE;
+    return sortedMachines.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedMachines, currentPage]);
+
+  const totalPages = Math.ceil(sortedMachines.length / ITEMS_PER_PAGE);
 
   if (isLoading) {
     return (
@@ -60,9 +102,33 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="h-12 bg-white border-b border-epiroc-medium-grey flex items-center justify-between px-4">
-        <span className="text-sm font-medium text-epiroc-grey">
-          {t('data.total')}: <span className="text-epiroc-dark-blue font-bold">{machines.length}</span>
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-epiroc-grey">
+            {t('data.total')}: <span className="text-epiroc-dark-blue font-bold">{machines.length}</span>
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center text-sm">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="px-2 py-1 rounded disabled:opacity-50 hover:bg-epiroc-light-grey"
+              >
+                &lt;
+              </button>
+              <span className="px-2 font-medium">
+                {currentPage + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage === totalPages - 1}
+                className="px-2 py-1 rounded disabled:opacity-50 hover:bg-epiroc-light-grey"
+              >
+                &gt;
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-4">
           <div className="relative group">
@@ -111,12 +177,23 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
               <thead className="bg-epiroc-dark-blue text-white uppercase text-xs font-bold tracking-wider">
                 <tr>
                   {Object.entries(visibleColumns).map(([key, visible]) => 
-                    visible ? <th key={key} className="px-4 py-3">{t(`columns.${key}`)}</th> : null
+                    visible ? (
+                      <th key={key} className="px-4 py-3 cursor-pointer" onClick={() => handleSort(key as keyof Machine)}>
+                        <div className="flex items-center gap-2">
+                          {t(`columns.${key}`)}
+                          {sortColumn === key ? (
+                            sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                          ) : (
+                            <ArrowUpDown size={14} className="opacity-30" />
+                          )}
+                        </div>
+                      </th>
+                    ) : null
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-epiroc-light-grey">
-                {machines.map((machine, idx) => (
+                {paginatedMachines.map((machine, idx) => (
                   <tr key={idx} className="hover:bg-epiroc-light-grey transition-colors">
                     {Object.entries(visibleColumns).map(([key, visible]) => 
                       visible ? (
@@ -142,7 +219,7 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {machines.map((machine, idx) => (
+            {paginatedMachines.map((machine, idx) => (
               <div key={idx} className="bg-white rounded-lg border border-epiroc-medium-grey shadow-sm hover:shadow-md transition-shadow p-0 overflow-hidden">
                 <div className="bg-epiroc-dark-blue text-white px-4 py-3 flex justify-between items-center">
                   <h3 className="font-bold truncate">{machine.machine}</h3>
