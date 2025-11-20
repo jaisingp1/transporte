@@ -186,6 +186,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isThinking}
             className="absolute right-2 w-8 h-8 bg-epiroc-yellow rounded-full flex items-center justify-center text-epiroc-dark-blue hover:bg-epiroc-dark-yellow disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title={t('chat.send')}
           >
             <Send size={16} />
           </button>
