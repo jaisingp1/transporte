@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
+import { Agent } from 'https';
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -87,7 +88,22 @@ if (!zApiKey) {
     throw new Error('Z_API_KEY is not set');
 }
 
-async function callZAPI(messages: any[], model = 'GLM-4.5-Flash') {
+// Define the interface for Z.ai API response
+interface ZApiResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
+// Create a custom HTTPS agent that ignores certificate errors
+// WARNING: This is not secure and should only be used for development/testing
+const httpsAgent = new Agent({
+  rejectUnauthorized: false
+});
+
+async function callZAPI(messages: any[], model = 'GLM-4.5-Flash'): Promise<ZApiResponse> {
     const url = 'https://api.z.ai/api/paas/v4/chat/completions';
     console.log(`[Z.ai] Calling model: ${model}`);
     const response = await fetch(url, {
@@ -100,7 +116,8 @@ async function callZAPI(messages: any[], model = 'GLM-4.5-Flash') {
             model: model,
             messages: messages,
             temperature: 0.1 // Lower temperature for more deterministic SQL
-        })
+        }),
+        agent: httpsAgent // Use the custom agent that ignores certificate errors
     });
 
     if (!response.ok) {
@@ -109,7 +126,7 @@ async function callZAPI(messages: any[], model = 'GLM-4.5-Flash') {
         throw new Error(`Z.ai API call failed: ${response.status}`);
     }
 
-    return await response.json();
+    return await response.json() as ZApiResponse;
 }
 
 

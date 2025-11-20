@@ -12,7 +12,7 @@ Rules:
 7. Port names "ANGAMOS", "COQUIMBO", "VALPARAISO", and "SAN ANTONIO" (case-insensitive) ALWAYS refer to the 'customs' column.
 8. NEVER use the 'reference' column in any query. The unique identifier is 'pn' (Part Number), but only use it if explicitly mentioned as "part number", "número de parte", "pn", etc.
 9. If the question asks about machines arriving between two dates (e.g., "entre el 10 y el 20 de mayo"), use the 'eta_epiroc' column for date filtering.
-10. Status-related terms such as "ingresada", "origen", "puerto", "tránsito" (and their plurals or variants) refer to the 'status' column. Use case-insensitive matching via UPPER(status) = UPPER('...') or LIKE if needed.
+10. Status-related terms such as "ingresada", "origen", "puerto", "transito" (and their plurals or variants) refer to the 'status' column. Use case-insensitive matching via UPPER(status) = UPPER('...') or LIKE if needed.
 11. All text comparisons must be case-insensitive by using UPPER() on both the column and the search term.
 12. Never return JSON, explanations, or any text other than the raw SQL query.
 13. The SELECT statement MUST query the 'machines' table explicitly (e.g., SELECT * FROM machines ...). Never return queries like SELECT 1, SELECT 'test', or any expression that does not retrieve data from the 'machines' table. 

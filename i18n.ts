@@ -14,7 +14,8 @@ const resources = {
         placeholder: "Escribe tu consulta aquí... (ej. ¿Dónde está la CT2?)",
         welcome: "Hola. Soy tu asistente logístico. Pregúntame sobre el estado, ubicación o detalles de las máquinas.",
         thinking: "Procesando...",
-        error: "Hubo un error al procesar tu solicitud."
+        error: "Hubo un error al procesar tu solicitud.",
+        defaultAssistantMessage: "Estos son los resultados basados en la base de datos."
       },
       data: {
         noData: "No hay datos seleccionados",
@@ -59,7 +60,8 @@ const resources = {
         placeholder: "Type your query here... (e.g., Where is the CT2?)",
         welcome: "Hello. I am your logistics assistant. Ask me about machine status, location, or details.",
         thinking: "Thinking...",
-        error: "There was an error processing your request."
+        error: "There was an error processing your request.",
+        defaultAssistantMessage: "Here are the results based on the database."
       },
       data: {
         noData: "No data selected",
@@ -104,7 +106,8 @@ const resources = {
         placeholder: "Digite sua consulta aqui... (ex: Onde está o CT2?)",
         welcome: "Olá. Sou seu assistente de logística. Pergunte-me sobre o status, localização ou detalhes das máquinas.",
         thinking: "Pensando...",
-        error: "Ocorreu um erro ao processar sua solicitação."
+        error: "Ocorreu um erro ao processar sua solicitação.",
+        defaultAssistantMessage: "Aqui estão os resultados com base no banco de dados."
       },
       data: {
         noData: "Nenhum dado selecionado",
@@ -149,7 +152,8 @@ const resources = {
         placeholder: "Skriv din fråga här... (t.ex. Var är CT2?)",
         welcome: "Hej. Jag är din logistikassistent. Fråga mig om maskinstatus, plats eller detaljer.",
         thinking: "Tänker...",
-        error: "Det uppstod ett fel när din begäran behandlades."
+        error: "Det uppstod ett fel när din begäran behandlades.",
+        defaultAssistantMessage: "Här är resultaten baserade på databasen."
       },
       data: {
         noData: "Inga data valda",
