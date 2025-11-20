@@ -11,6 +11,8 @@ const resources = {
         lang: "Idioma"
       },
       chat: {
+        title: "Chat de Consulta",
+        reset: "Reiniciar conversación",
         placeholder: "Escribe tu consulta aquí... (ej. ¿Dónde está la CT2?)",
         welcome: "Hola. Soy tu asistente logístico. Pregúntame sobre el estado, ubicación o detalles de las máquinas.",
         thinking: "Procesando...",
@@ -56,6 +58,8 @@ const resources = {
         lang: "Language"
       },
       chat: {
+        title: "Query Chat",
+        reset: "Reset conversation",
         placeholder: "Type your query here... (e.g., Where is the CT2?)",
         welcome: "Hello. I am your logistics assistant. Ask me about machine status, location, or details.",
         thinking: "Thinking...",
@@ -101,6 +105,8 @@ const resources = {
         lang: "Língua"
       },
       chat: {
+        title: "Chat de Consulta",
+        reset: "Reiniciar conversa",
         placeholder: "Digite sua consulta aqui... (ex: Onde está o CT2?)",
         welcome: "Olá. Sou seu assistente de logística. Pergunte-me sobre o status, localização ou detalhes das máquinas.",
         thinking: "Pensando...",
@@ -146,6 +152,8 @@ const resources = {
         lang: "Språk"
       },
       chat: {
+        title: "Frågechatt",
+        reset: "Återställ konversation",
         placeholder: "Skriv din fråga här... (t.ex. Var är CT2?)",
         welcome: "Hej. Jag är din logistikassistent. Fråga mig om maskinstatus, plats eller detaljer.",
         thinking: "Tänker...",

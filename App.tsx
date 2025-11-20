@@ -18,6 +18,11 @@ const App: React.FC = () => {
     setCurrentSql(sql);
   };
 
+  const handleReset = () => {
+    setMachines([]);
+    setCurrentSql(null);
+  };
+
   return (
     <div className="min-h-screen bg-epiroc-light-grey flex flex-col text-epiroc-dark-blue overflow-hidden">
       <Header 
@@ -35,6 +40,7 @@ const App: React.FC = () => {
               <ChatArea 
                 onQuerySuccess={handleQuerySuccess}
                 setIsLoading={setIsLoading}
+                onReset={handleReset}
               />
             </div>
 

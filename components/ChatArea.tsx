@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatMessage, Machine, QueryResponse } from '../types';
-import { Send } from 'lucide-react';
+import { Send, RefreshCw } from 'lucide-react';
 
 interface ChatAreaProps {
   onQuerySuccess: (data: Machine[], sql: string) => void;
   setIsLoading: (loading: boolean) => void;
+  onReset: () => void;
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading }) => {
+export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading, onReset }) => {
   const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: 'init', role: 'assistant', content: t('chat.welcome'), timestamp: Date.now() }
@@ -100,9 +101,22 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
     }
   };
 
+  const handleResetChat = () => {
+    onReset();
+    setMessages([
+      { id: 'init', role: 'assistant', content: t('chat.welcome'), timestamp: Date.now() }
+    ]);
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+      <div className="h-12 border-b border-epiroc-medium-grey flex items-center justify-between px-4 shrink-0">
+        <h3 className="font-bold text-epiroc-dark-blue">{t('chat.title')}</h3>
+        <button onClick={handleResetChat} className="text-epiroc-grey hover:text-epiroc-dark-blue" title={t('chat.reset')}>
+          <RefreshCw size={16} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin" style={{ maxHeight: 'calc(100vh - 12rem)' }}>
         {messages.map((msg) => (
           <div 
             key={msg.id} 
