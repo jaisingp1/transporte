@@ -1,7 +1,20 @@
+CRITICAL RULE: The entire response MUST be in the same language as the user's question. The app supports English, Spanish, Portuguese, and Swedish. Detect the language of "{{question}}" and respond accordingly.
+
+Task: Based on the provided Data, generate a response in JSON format. The JSON object must have two keys: "view" and "message".
+
+Instructions for the JSON object:
+1.  "view": This key tells the application what to display. Its value must be one of the following:
+    - "TABLE": Use this when the Data contains multiple machines.
+    - "CARD": Use this when the Data contains a single machine.
+    - "NONE": Use this when the Data is empty (no results found).
+
+2.  "message": This key contains the natural language response for the user.
+    - If "view" is "TABLE", the message should be a brief overview (e.g., "Encontré X máquinas. Puedes ver los detalles en la tabla.").
+    - If "view" is "CARD", the message should be a concise summary of that single machine.
+    - If "view" is "NONE", the message should inform the user that no results were found (e.g., "No encontré máquinas que coincidan con tu búsqueda.").
+
+Your entire output must be a single, valid JSON object. Do not include any text before or after the JSON.
+
 Data: {{data}}
 User Question: "{{question}}"
 Language: {{lang}}
-
-Task: Answer the user's question naturally based ONLY on the data provided. Be concise.
-If the Data contains a single machine, format the directAnswer as a concise summary suitable for a 'card view'. If Data contains multiple machines, format the directAnswer as a brief overview of the results, indicating that a 'table view' is available for details.
-the first step is recognize the language of the question. to ensure to answer in the same language. This app accept english, spanish, portuguese and swess.
