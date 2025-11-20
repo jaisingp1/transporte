@@ -15,24 +15,33 @@ interface DataAreaProps {
 
 const ITEMS_PER_PAGE = 10;
 
+// Define a fixed order for the columns
+const COLUMN_ORDER: (keyof Machine)[] = [
+  'customs', 'pn', 'machine', 'eta_epiroc', 'division', 'status', 'eta_port', 'ship', 'reference', 'etd', 'bl'
+];
+
 export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, viewMode: propViewMode }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState< 'TABLE' | 'CARD'>('TABLE');
   const [sortColumn, setSortColumn] = useState<keyof Machine>('machine');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(0);
-  const [visibleColumns, setVisibleColumns] = useState({
-    machine: true,
+  const [isColumnPickerOpen, setIsColumnPickerOpen] = useState(false);
+  const columnPickerRef = React.useRef<HTMLDivElement>(null);
+  const [visibleColumns, setVisibleColumns] = useState<Record<keyof Machine, boolean>>({
     customs: true,
-    eta_port: true,
+    pn: true,
     eta_epiroc: true,
-    ship: true,
+    division: true,
     status: true,
+    machine: false,
+    eta_port: false,
+    ship: false,
     reference: false,
-    pn: false,
     etd: false,
     bl: false,
-    division: false
+    // Note: 'id' is not a displayable column
+    id: false,
   });
 
   // Set view mode based on prop or result count
@@ -45,6 +54,19 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
       setViewMode('TABLE');
     }
   }, [machines, propViewMode]);
+
+  // Close column picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnPickerRef.current && !columnPickerRef.current.contains(event.target as Node)) {
+        setIsColumnPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSort = (column: keyof Machine) => {
     if (sortColumn === column) {
@@ -166,14 +188,18 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative group">
-            <button className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1">
+          <div className="relative" ref={columnPickerRef}>
+            <button
+              onClick={() => setIsColumnPickerOpen(!isColumnPickerOpen)}
+              className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1"
+            >
               {t('data.toggleCols')}
             </button>
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-epiroc-medium-grey shadow-xl rounded z-50 hidden group-hover:block p-2">
-              {Object.keys(visibleColumns).map(col => (
-                <label key={col} className="flex items-center gap-2 p-1 hover:bg-epiroc-light-grey rounded cursor-pointer text-sm">
-                  <input
+            {isColumnPickerOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-epiroc-medium-grey shadow-xl rounded z-50 p-2">
+                {COLUMN_ORDER.map(col => (
+                  <label key={col} className="flex items-center gap-2 p-1 hover:bg-epiroc-light-grey rounded cursor-pointer text-sm">
+                    <input
                     type="checkbox"
                     checked={visibleColumns[col as keyof typeof visibleColumns]}
                     onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
@@ -218,8 +244,8 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
             <table className="w-full text-sm text-left">
               <thead className="bg-epiroc-dark-blue text-white uppercase text-xs font-bold tracking-wider">
                 <tr>
-                  {Object.entries(visibleColumns).map(([key, visible]) => 
-                    visible ? (
+                  {COLUMN_ORDER.map(key =>
+                    visibleColumns[key] ? (
                       <th key={key} className="px-4 py-3 cursor-pointer" onClick={() => handleSort(key as keyof Machine)}>
                         <div className="flex items-center gap-2">
                           {t(`columns.${key}`)}
@@ -237,8 +263,8 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
               <tbody className="divide-y divide-epiroc-light-grey">
                 {paginatedMachines.map((machine, idx) => (
                   <tr key={idx} className="hover:bg-epiroc-light-grey transition-colors">
-                    {Object.entries(visibleColumns).map(([key, visible]) => 
-                      visible ? (
+                    {COLUMN_ORDER.map(key =>
+                      visibleColumns[key] ? (
                         <td key={key} className="px-4 py-3 border-r border-transparent last:border-0">
                           {key === 'status' ? (
                             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
