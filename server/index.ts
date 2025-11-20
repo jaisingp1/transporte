@@ -35,6 +35,22 @@ if (!fs.existsSync(UPLOAD_DIR)){
 // --- Database Setup ---
 let db: sqlite3.Database;
 
+const CREATE_MACHINES_TABLE_SQL = `
+CREATE TABLE machines (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  customs TEXT,
+  reference TEXT,
+  machine TEXT NOT NULL,
+  pn TEXT,
+  etb DATE,
+  eta_port DATE,
+  eta_epiroc DATE,
+  ship TEXT,
+  division TEXT,
+  status TEXT,
+  bl TEXT
+);`;
+
 const initDB = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     db = new sqlite3.Database(DB_PATH, (err) => {
@@ -43,20 +59,8 @@ const initDB = (): Promise<void> => {
         return reject(err);
       }
       console.log('[SERVER START] Connected to the SQLite database.');
-      db.run(`CREATE TABLE IF NOT EXISTS machines (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        customs TEXT,
-        reference TEXT,
-        machine TEXT NOT NULL,
-        pn TEXT,
-        etb DATE,
-        eta_port DATE,
-        eta_epiroc DATE,
-        ship TEXT,
-        division TEXT,
-        status TEXT,
-        bl TEXT
-      )`, (err) => {
+      // Use "IF NOT EXISTS" to be safe on initial startup
+      db.run(CREATE_MACHINES_TABLE_SQL.replace('CREATE TABLE', 'CREATE TABLE IF NOT EXISTS'), (err) => {
         if (err) {
           console.error('[DATABASE ERROR] Could not create table', err.message);
           return reject(err);
