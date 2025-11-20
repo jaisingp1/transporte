@@ -11,6 +11,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import { Agent } from 'https';
+import { getTranslation } from './translations.js';
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +19,7 @@ const __dirname = path.dirname(__filename);
 
 // Load environment variables from .env.local
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+console.log('[SERVER START] Environment variables loaded.');
 
 // --- Configuration ---
 const PORT = 3000;
@@ -31,28 +33,40 @@ if (!fs.existsSync(UPLOAD_DIR)){
 }
 
 // --- Database Setup ---
-const db = new sqlite3.Database(DB_PATH);
+let db: sqlite3.Database;
 
-const initDB = () => {
-  db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS machines (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customs TEXT,
-      reference TEXT,
-      machine TEXT NOT NULL,
-      pn TEXT,
-      etb DATE,
-      eta_port DATE,
-      eta_epiroc DATE,
-      ship TEXT,
-      division TEXT,
-      status TEXT,
-      bl TEXT
-    )`);
+const initDB = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db = new sqlite3.Database(DB_PATH, (err) => {
+      if (err) {
+        console.error('[DATABASE ERROR]', err.message);
+        return reject(err);
+      }
+      console.log('[SERVER START] Connected to the SQLite database.');
+      db.run(`CREATE TABLE IF NOT EXISTS machines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customs TEXT,
+        reference TEXT,
+        machine TEXT NOT NULL,
+        pn TEXT,
+        etb DATE,
+        eta_port DATE,
+        eta_epiroc DATE,
+        ship TEXT,
+        division TEXT,
+        status TEXT,
+        bl TEXT
+      )`, (err) => {
+        if (err) {
+          console.error('[DATABASE ERROR] Could not create table', err.message);
+          return reject(err);
+        }
+        console.log('[SERVER START] Table "machines" is ready.');
+        resolve();
+      });
+    });
   });
 };
-
-initDB();
 
 // --- Express Setup ---
 const app = express();
@@ -382,19 +396,28 @@ app.post('/api/query', async (req, res) => {
         // Step 3: Generate Explanation using the selected AI model
         const directAnswer = await generateExplanation(rows, question, lang, aiModel);
 
+        // Determine view mode based on results
+        const view = rows.length === 1 ? 'CARD' : rows.length > 1 ? 'TABLE' : undefined;
+
         res.json({
           data: rows,
           sql: sql,
-          directAnswer: directAnswer
+          directAnswer: directAnswer,
+          view: view
         });
 
       } catch (explanationError) {
         console.error(`[AI - ${aiModel}] Explanation Generation Error:`, explanationError);
+
+        // Determine view mode even on explanation failure
+        const view = rows.length === 1 ? 'CARD' : rows.length > 1 ? 'TABLE' : undefined;
+
         // Still return the data even if explanation fails
         res.json({
           data: rows,
           sql: sql,
-          directAnswer: "I found the data, but couldn't generate an explanation."
+          directAnswer: getTranslation(lang, 'explanationError'),
+          view: view
         });
       }
     });
@@ -405,6 +428,16 @@ app.post('/api/query', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await initDB();
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

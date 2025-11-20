@@ -15,7 +15,8 @@ const resources = {
         welcome: "Hola. Soy tu asistente logístico. Pregúntame sobre el estado, ubicación o detalles de las máquinas.",
         thinking: "Procesando...",
         error: "Hubo un error al procesar tu solicitud.",
-        defaultAssistantMessage: "Estos son los resultados basados en la base de datos."
+        defaultAssistantMessage: "Estos son los resultados basados en la base de datos.",
+        send: "Enviar"
       },
       data: {
         noData: "No hay datos seleccionados",
@@ -61,7 +62,8 @@ const resources = {
         welcome: "Hello. I am your logistics assistant. Ask me about machine status, location, or details.",
         thinking: "Thinking...",
         error: "There was an error processing your request.",
-        defaultAssistantMessage: "Here are the results based on the database."
+        defaultAssistantMessage: "Here are the results based on the database.",
+        send: "Send"
       },
       data: {
         noData: "No data selected",
@@ -107,7 +109,8 @@ const resources = {
         welcome: "Olá. Sou seu assistente de logística. Pergunte-me sobre o status, localização ou detalhes das máquinas.",
         thinking: "Pensando...",
         error: "Ocorreu um erro ao processar sua solicitação.",
-        defaultAssistantMessage: "Aqui estão os resultados com base no banco de dados."
+        defaultAssistantMessage: "Aqui estão os resultados com base no banco de dados.",
+        send: "Enviar"
       },
       data: {
         noData: "Nenhum dado selecionado",
@@ -153,7 +156,8 @@ const resources = {
         welcome: "Hej. Jag är din logistikassistent. Fråga mig om maskinstatus, plats eller detaljer.",
         thinking: "Tänker...",
         error: "Det uppstod ett fel när din begäran behandlades.",
-        defaultAssistantMessage: "Här är resultaten baserade på databasen."
+        defaultAssistantMessage: "Här är resultaten baserade på databasen.",
+        send: "Skicka"
       },
       data: {
         noData: "Inga data valda",
