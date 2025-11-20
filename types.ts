@@ -26,6 +26,7 @@ export interface QueryResponse {
   sql: string;
   explanation?: string;
   directAnswer?: string;
+  view?: 'TABLE' | 'CARD';
 }
 
 // Strict mapping for Excel column indices (0-based)

@@ -4,7 +4,7 @@ import { ChatMessage, Machine, QueryResponse } from '../types';
 import { Send, RefreshCw } from 'lucide-react';
 
 interface ChatAreaProps {
-  onQuerySuccess: (data: Machine[], sql: string | null) => void;
+  onQuerySuccess: (data: Machine[], sql: string | null, view?: 'TABLE' | 'CARD') => void;
   setIsLoading: (loading: boolean) => void;
 }
 
@@ -80,7 +80,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
       setMessages(prev => [...prev, assistantMsg]);
       
       // Update data view
-      onQuerySuccess(data.data, data.sql);
+      onQuerySuccess(data.data, data.sql, data.view);
 
     } catch (error) {
       console.error("Chat error:", error);

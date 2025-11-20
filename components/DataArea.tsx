@@ -4,17 +4,20 @@ import { Machine } from '../types';
 import ExcelJS from 'exceljs';
 import { LayoutGrid, Table as TableIcon, Ship, MapPin, Anchor, ArrowUpDown, ArrowUp, ArrowDown, FileSpreadsheet } from 'lucide-react';
 
+export type ViewMode = 'TABLE' | 'CARD' | undefined;
+
 interface DataAreaProps {
   machines: Machine[];
   isLoading: boolean;
   sql: string | null;
+  viewMode?: ViewMode;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) => {
+export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, viewMode: propViewMode }) => {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [viewMode, setViewMode] = useState< 'TABLE' | 'CARD'>('TABLE');
   const [sortColumn, setSortColumn] = useState<keyof Machine>('machine');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(0);
@@ -32,14 +35,16 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
     division: false
   });
 
-  // Auto-switch view mode based on result count
+  // Set view mode based on prop or result count
   useEffect(() => {
-    if (machines.length === 1) {
-      setViewMode('card');
-    } else if (machines.length > 1) {
-      setViewMode('table');
+    if (propViewMode) {
+      setViewMode(propViewMode);
+    } else if (machines.length === 1) {
+      setViewMode('CARD');
+    } else {
+      setViewMode('TABLE');
     }
-  }, [machines]);
+  }, [machines, propViewMode]);
 
   const handleSort = (column: keyof Machine) => {
     if (sortColumn === column) {
@@ -189,15 +194,15 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
 
           <div className="flex bg-epiroc-light-grey rounded p-0.5">
             <button 
-              onClick={() => setViewMode('card')}
-              className={`p-1.5 rounded ${viewMode === 'card' ? 'bg-white shadow text-epiroc-yellow' : 'text-epiroc-grey'}`}
+              onClick={() => setViewMode('CARD')}
+              className={`p-1.5 rounded ${viewMode === 'CARD' ? 'bg-white shadow text-epiroc-yellow' : 'text-epiroc-grey'}`}
               title={t('data.cardView')}
             >
               <LayoutGrid size={16} />
             </button>
             <button 
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-white shadow text-epiroc-yellow' : 'text-epiroc-grey'}`}
+              onClick={() => setViewMode('TABLE')}
+              className={`p-1.5 rounded ${viewMode === 'TABLE' ? 'bg-white shadow text-epiroc-yellow' : 'text-epiroc-grey'}`}
               title={t('data.tableView')}
             >
               <TableIcon size={16} />
@@ -208,7 +213,7 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
-        {viewMode === 'table' ? (
+        {viewMode === 'TABLE' ? (
           <div className="bg-white rounded shadow overflow-hidden border border-epiroc-medium-grey">
             <table className="w-full text-sm text-left">
               <thead className="bg-epiroc-dark-blue text-white uppercase text-xs font-bold tracking-wider">

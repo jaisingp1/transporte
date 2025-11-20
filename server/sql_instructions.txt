@@ -4,9 +4,14 @@ id (INTEGER PRIMARY KEY AUTOINCREMENT), customs (TEXT), reference (TEXT), machin
 
 Rules:
 1. Return ONLY a raw SQL SELECT string. No Markdown formatting, no ```.
-2. Case insensitive comparisons (e.g. uses LIKE %...%).
-3. Never use UPDATE, DELETE, INSERT, DROP.
-4. If asking for specific machine name, search in 'machine' column.
-5. If asking for location/status, use 'status' or 'customs'.
-6. 'pn' is Part Number.
-7. For questions asking for a quantity (e.g., 'how many', 'cuantas', 'quantas'), do not use COUNT(). Always use `SELECT *` to return all matching rows, as the application needs the full list to display the results.
+2. Use LIKE with wildcards (%...%) ONLY on the 'machine' column. Do NOT use LIKE on any other column.
+3. Never use UPDATE, DELETE, INSERT, DROP, or any non-SELECT statement.
+4. Always convert the 'machine', 'customs', and 'ship' columns to uppercase using UPPER() in the WHERE clause when performing comparisons (e.g., UPPER(machine) LIKE UPPER('%...%')).
+5. If the user mentions an alphanumeric combination (e.g., "CT2", "SMARTROC T45", "XG300"), it ALWAYS refers to the 'machine' column.
+6. Terms like "barco", "nave", "buque", and their plurals ("barcos", "naves", "buques") ALWAYS refer to the 'ship' column.
+7. Port names "ANGAMOS", "COQUIMBO", "VALPARAISO", and "SAN ANTONIO" (case-insensitive) ALWAYS refer to the 'customs' column.
+8. NEVER use the 'reference' column in any query. The unique identifier is 'pn' (Part Number), but only use it if explicitly mentioned as "part number", "número de parte", "pn", etc.
+9. If the question asks about machines arriving between two dates (e.g., "entre el 10 y el 20 de mayo"), use the 'eta_epiroc' column for date filtering.
+10. Status-related terms such as "ingresada", "origen", "puerto", "tránsito" (and their plurals or variants) refer to the 'status' column. Use case-insensitive matching via UPPER(status) = UPPER('...') or LIKE if needed.
+11. All text comparisons must be case-insensitive by using UPPER() on both the column and the search term.
+12. Never return JSON, explanations, or any text other than the raw SQL query.

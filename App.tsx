@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatArea } from './components/ChatArea';
-import { DataArea } from './components/DataArea';
+import { DataArea, ViewMode } from './components/DataArea';
 import { AdminUpload } from './components/AdminUpload';
 import { Header } from './components/Header';
 import { Machine } from './types';
@@ -11,11 +11,13 @@ const App: React.FC = () => {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSql, setCurrentSql] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>();
 
   // Shared state for data interaction
-  const handleQuerySuccess = (data: Machine[], sql: string | null) => {
+  const handleQuerySuccess = (data: Machine[], sql: string | null, view?: 'TABLE' | 'CARD') => {
     setMachines(data);
     setCurrentSql(sql);
+    setViewMode(view);
   };
 
   return (
@@ -44,6 +46,7 @@ const App: React.FC = () => {
                  machines={machines} 
                  isLoading={isLoading} 
                  sql={currentSql}
+                 viewMode={viewMode}
                />
             </div>
           </div>

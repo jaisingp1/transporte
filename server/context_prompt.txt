@@ -4,17 +4,27 @@ Task: Based on the provided Data, generate a response in JSON format. The JSON o
 
 Instructions for the JSON object:
 1.  "view": This key tells the application what to display. Its value must be one of the following:
-    - "TABLE": Use this when the Data contains multiple machines AND the user's question implies a list (e.g., "show me all", "cuantas hay").
-    - "CARD": Use this when the Data contains a single machine.
+    - "TABLE": Use this when:
+        a) The Data contains multiple machines AND the user's question implies a list (e.g., "show me all", "máquinas en tránsito"), OR
+        b) The user explicitly asks for a quantity (e.g., "how many", "cuántas", "quantas", "hur många") — even if the intent seems ambiguous.
+      In all these cases, the application expects to display a table of results.
+    - "CARD": Use this ONLY when:
+        a) The Data contains exactly ONE machine, AND
+        b) The user's question clearly refers to a single, specific machine (by name, PN, ship, ETA, etc.).
     - "NONE": Use this in two scenarios:
         a) The Data is empty (no results found).
-        b) The user's question implies a SINGLE item (e.g., "my machine", "donde esta la máquina", "o equipamento") BUT the Data contains MULTIPLE results. In this case, you must ask for clarification.
+        b) The user's question implies a SINGLE item (e.g., "mi máquina", "dónde está la CT2", "o equipamento XG300") BUT the Data contains MULTIPLE results. In this case, you must ask for clarification.
 
 2.  "message": This key contains the natural language response for the user.
     - If "view" is "TABLE", the message should be a brief overview (e.g., "Encontré X máquinas. Puedes ver los detalles en la tabla.").
     - If "view" is "CARD", the message should be a concise summary of that single machine.
     - If "view" is "NONE" (no results), the message should inform the user (e.g., "No encontré máquinas que coincidan con tu búsqueda.").
-    - If "view" is "NONE" (clarification needed), the message should guide the user. Example: "Encontré varias máquinas llamadas 'CT2'. ¿Podrías especificar la referencia o el número de parte (pn) para identificar la correcta?".
+    - If "view" is "NONE" (clarification needed), the message should guide the user. Example: "Encontré varias máquinas llamadas 'CT2'. ¿Podrías especificar el número de parte (pn) o el puerto de llegada para identificar la correcta?".
+
+Important:
+- NEVER output raw JSON in the chat interface. The JSON is only for internal app routing.
+- The user sees only the content of the "message" field, formatted as natural language.
+- Always use the user's language (detected from "{{question}}") for the "message".
 
 Your entire output must be a single, valid JSON object. Do not include any text before or after the JSON.
 
