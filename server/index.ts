@@ -70,16 +70,100 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// --- Gemini Client ---
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
+// --- AI Clients Setup ---
+
+// Gemini Client
+const geminiApiKey = process.env.GEMINI_API_KEY;
+if (!geminiApiKey) {
   throw new Error('GEMINI_API_KEY is not set');
 }
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const genAI = new GoogleGenerativeAI(geminiApiKey);
+const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+// Z.ai Client
+const zApiKey = process.env.Z_API_KEY;
+if (!zApiKey) {
+    throw new Error('Z_API_KEY is not set');
+}
+
+async function callZAPI(messages: any[], model = 'GLM-4.5-Flash') {
+    const url = 'https://api.z.ai/api/paas/v4/chat/completions';
+    console.log(`[Z.ai] Calling model: ${model}`);
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${zApiKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: model,
+            messages: messages,
+            temperature: 0.1 // Lower temperature for more deterministic SQL
+        })
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        console.error(`[Z.ai] API call failed: ${response.status}`, errorBody);
+        throw new Error(`Z.ai API call failed: ${response.status}`);
+    }
+
+    return await response.json();
+}
+
 
 // --- Instructions for AI ---
 const SQL_INSTRUCTIONS = fs.readFileSync(path.join(__dirname, 'sql_instructions.txt'), 'utf-8');
+const CONTEXT_PROMPT_TEMPLATE = fs.readFileSync(path.join(__dirname, 'context_prompt.txt'), 'utf-8');
+
+
+// --- AI Generation Logic ---
+
+const generateSql = async (question: string, aiModel: 'gemini' | 'zai' = 'gemini'): Promise<string> => {
+    const sqlPrompt = `${SQL_INSTRUCTIONS}\nQuestion: "${question}"\nSQL:`;
+
+    let generatedText: string;
+
+    if (aiModel === 'zai') {
+        const messages = [{ role: 'user', content: sqlPrompt }];
+        const result = await callZAPI(messages);
+        generatedText = result.choices[0].message.content;
+    } else { // Default to gemini
+        const result = await geminiModel.generateContent(sqlPrompt);
+        generatedText = result.response.text();
+    }
+
+    // Strip markdown block and trim
+    const sql = generatedText.replace(/```sql/g, '').replace(/```/g, '').trim();
+    console.log(`[AI - ${aiModel}] Generated SQL: ${sql}`);
+    return sql;
+};
+
+const generateExplanation = async (data: any[], question: string, lang: string, aiModel: 'gemini' | 'zai' = 'gemini'): Promise<string | null> => {
+    if (data.length === 0 || data.length >= 5) {
+        return null;
+    }
+
+    let contextPrompt = CONTEXT_PROMPT_TEMPLATE
+        .replace('{{data}}', JSON.stringify(data))
+        .replace('{{question}}', question)
+        .replace('{{lang}}', lang);
+
+    let explanation: string;
+
+    if (aiModel === 'zai') {
+        const messages = [{ role: 'user', content: contextPrompt }];
+        const result = await callZAPI(messages);
+        explanation = result.choices[0].message.content;
+    } else { // Default to gemini
+        const result = await geminiModel.generateContent(contextPrompt);
+        explanation = result.response.text();
+    }
+
+    console.log(`[AI - ${aiModel}] Generated Explanation: ${explanation.substring(0, 100)}...`);
+    return explanation;
+}
+
 
 // --- Helper Functions ---
 
@@ -248,21 +332,16 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
 
 // 2. Query Endpoint
 app.post('/api/query', async (req, res) => {
-  const { question, lang } = req.body;
+  const { question, lang, model: aiModel = 'gemini' } = req.body; // default to gemini
 
-  if (!question) return res.status(400).json({ error: 'Question required' });
+  if (!question) return res.status(400).json({ error: 'Question is required' });
+  if (aiModel !== 'gemini' && aiModel !== 'zai') {
+    return res.status(400).json({ error: 'Invalid model specified' });
+  }
 
   try {
-    // Step 1: Generate SQL using Gemini
-    const sqlPrompt = `${SQL_INSTRUCTIONS}\nQuestion: "${question}"\nSQL:`;
-    
-    const result = await model.generateContent(sqlPrompt);
-    const sqlResponse = result.response;
-    let sql = sqlResponse.text().trim();
-    
-    // Strip markdown block if present
-    sql = sql.replace(/```sql/g, '').replace(/```/g, '').trim();
-    console.log(`[AI] Generated SQL: ${sql}`);
+    // Step 1: Generate SQL using the selected AI model
+    const sql = await generateSql(question, aiModel);
 
     // Validate SQL
     const trimmedSql = sql.trim().toLowerCase();
@@ -270,37 +349,41 @@ app.post('/api/query', async (req, res) => {
       throw new Error('AI generated potentially unsafe SQL. Only single SELECT statements are allowed.');
     }
 
-    // Execute SQL
+    // Step 2: Execute SQL
     db.all(sql, [], async (err, rows) => {
       if (err) {
-        console.error("SQL Error", err);
-        return res.status(500).json({ error: 'Database error' });
+        console.error("SQL Execution Error:", err.message);
+        // Inform the user about the SQL error
+        return res.status(500).json({
+            error: 'There was an error with the generated query. Please try rephrasing your question.',
+            details: err.message
+        });
       }
 
-      // Step 2: Generate Explanations if needed
-      let directAnswer = null;
-      
-      if (rows.length > 0 && rows.length < 5) {
-        let contextPrompt = fs.readFileSync(path.join(__dirname, 'context_prompt.txt'), 'utf-8');
-        contextPrompt = contextPrompt.replace('{{data}}', JSON.stringify(rows));
-        contextPrompt = contextPrompt.replace('{{question}}', question);
-        contextPrompt = contextPrompt.replace('{{lang}}', lang);
-        
-        const explanationResult = await model.generateContent(contextPrompt);
-        const explanationResponse = explanationResult.response;
-        directAnswer = explanationResponse.text();
-      }
+      try {
+        // Step 3: Generate Explanation using the selected AI model
+        const directAnswer = await generateExplanation(rows, question, lang, aiModel);
 
-      res.json({
-        data: rows,
-        sql: sql,
-        directAnswer: directAnswer
-      });
+        res.json({
+          data: rows,
+          sql: sql,
+          directAnswer: directAnswer
+        });
+
+      } catch (explanationError) {
+        console.error(`[AI - ${aiModel}] Explanation Generation Error:`, explanationError);
+        // Still return the data even if explanation fails
+        res.json({
+          data: rows,
+          sql: sql,
+          directAnswer: "I found the data, but couldn't generate an explanation."
+        });
+      }
     });
 
   } catch (error) {
-    console.error("Gemini Error", error);
-    res.status(500).json({ error: 'AI processing failed' });
+    console.error(`[AI - ${aiModel}] Main Query Processing Error:`, error);
+    res.status(500).json({ error: 'An error occurred while processing your request with the AI.' });
   }
 });
 

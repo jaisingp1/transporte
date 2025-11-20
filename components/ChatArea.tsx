@@ -14,6 +14,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
 
   const [messages, setMessages] = useState<ChatMessage[]>([getInitialMessage()]);
   const [inputValue, setInputValue] = useState('');
+  const [aiModel, setAiModel] = useState<'gemini' | 'zai'>('gemini'); // Add state for AI model
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isThinking, setIsThinking] = useState(false);
 
@@ -57,9 +58,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
       const response = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           question: userMsg.content,
-          lang: i18n.language 
+          lang: i18n.language,
+          model: aiModel // Pass the selected model
         })
       });
 
@@ -108,15 +110,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Chat Header */}
-      <div className="h-12 border-b border-epiroc-medium-grey flex items-center justify-between px-4 flex-shrink-0">
-        <h2 className="text-lg font-bold text-epiroc-dark-blue">{t('chat.title')}</h2>
-        <button 
-          onClick={handleReset}
-          className="text-epiroc-grey hover:text-epiroc-dark-blue transition-colors"
-          title={t('chat.reset')}
-        >
-          <RefreshCw size={18} />
-        </button>
+      <div className="h-16 border-b border-epiroc-medium-grey flex flex-col justify-center px-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-epiroc-dark-blue">{t('chat.title')}</h2>
+            <div className="flex items-center gap-2">
+                <select
+                    value={aiModel}
+                    onChange={(e) => setAiModel(e.target.value as 'gemini' | 'zai')}
+                    className="bg-epiroc-light-grey border border-epiroc-medium-grey rounded-md px-2 py-1 text-sm focus:outline-none focus:border-epiroc-yellow"
+                >
+                    <option value="gemini">Gemini</option>
+                    <option value="zai">Z.ai</option>
+                </select>
+                <button
+                    onClick={handleReset}
+                    className="text-epiroc-grey hover:text-epiroc-dark-blue transition-colors"
+                    title={t('chat.reset')}
+                >
+                    <RefreshCw size={18} />
+                </button>
+            </div>
+        </div>
       </div>
 
       {/* Messages Area */}
