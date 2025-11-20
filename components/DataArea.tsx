@@ -39,7 +39,7 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
   useEffect(() => {
     if (propViewMode) {
       setViewMode(propViewMode);
-    } else if (machines.length === 1) {
+    } else if (machines.length === 1 && machines[0] && 'machine' in machines[0]) {
       setViewMode('CARD');
     } else {
       setViewMode('TABLE');

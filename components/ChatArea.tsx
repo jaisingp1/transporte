@@ -86,8 +86,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
 
       setMessages(prev => [...prev, assistantMsg]);
       
-      // Update data view
-      onQuerySuccess(data.data, data.sql, data.view);
+      // If the data is not machine data (e.g., a COUNT query), don't display it in the table.
+      // The answer is already in the assistant's chat message.
+      const isMachineData = data.data.length > 0 && data.data[0] && 'machine' in data.data[0];
+
+      if (isMachineData) {
+        onQuerySuccess(data.data, data.sql, data.view);
+      } else {
+        onQuerySuccess([], data.sql, undefined);
+      }
 
     } catch (error) {
       console.error("Chat error:", error);
