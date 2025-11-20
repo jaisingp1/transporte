@@ -34,7 +34,7 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
     eta_epiroc: true,
     division: true,
     status: true,
-    machine: false,
+    machine: true,
     eta_port: false,
     ship: false,
     reference: false,
@@ -209,6 +209,7 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql, vi
                 </label>
               ))}
             </div>
+            )}
           </div>
           <button
             onClick={handleExport}
