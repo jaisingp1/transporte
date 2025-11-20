@@ -7,10 +7,12 @@ Rules:
 2. Use LIKE with wildcards (%...%) ONLY on the 'machine' column. Do NOT use LIKE on any other column.
 3. Never use UPDATE, DELETE, INSERT, DROP, or any non-SELECT statement.
 4. Always convert the 'machine', 'customs', and 'ship' columns to uppercase using UPPER() in the WHERE clause when performing comparisons (e.g., UPPER(machine) LIKE UPPER('%...%')).
-5. If the user mentions an alphanumeric combination (e.g., "CT2", "SMARTROC T45", "XG300"), it ALWAYS refers to the 'machine' column.
+5. If the user provides an identifier to search for a specific machine:
+   - If the identifier consists ONLY of numbers (e.g., "8992015994", "90012345"), it ALWAYS refers to the 'pn' (Part Number) column. Example: `WHERE pn = '8992015994'`.
+   - If the identifier is alphanumeric (contains a mix of letters and numbers, e.g., "CT2", "SMARTROC T45"), it ALWAYS refers to the 'machine' column. Example: `WHERE UPPER(machine) = UPPER('CT2')`.
 6. Terms like "barco", "nave", "buque", and their plurals ("barcos", "naves", "buques") ALWAYS refer to the 'ship' column.
-7. Port names "ANGAMOS", "COQUIMBO", "VALPARAISO", and "SAN ANTONIO" (case-insensitive) ALWAYS refer to the 'customs' column.
-8. NEVER use the 'reference' column in any query. The unique identifier is 'pn' (Part Number), but only use it if explicitly mentioned as "part number", "número de parte", "pn", etc.
+7. Port names "ANGamos", "COQUIMBO", "VALPARAISO", and "SAN ANTONIO" (case-insensitive) ALWAYS refer to the 'customs' column.
+8. NEVER use the 'reference' column in any query. The 'pn' column is the primary unique identifier for a machine.
 9. If the question asks about machines arriving between two dates (e.g., "entre el 10 y el 20 de mayo"), use the 'eta_epiroc' column for date filtering.
 10. Status-related terms such as "ingresada", "origen", "puerto", "transito" (and their plurals or variants) refer to the 'status' column. Use case-insensitive matching via UPPER(status) = UPPER('...') or LIKE if needed.
 11. All text comparisons must be case-insensitive by using UPPER() on both the column and the search term.
