@@ -155,6 +155,19 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
     const rowsToInsert = [];
     for (let i = 2; i <= worksheet.rowCount; i++) {
       const row = worksheet.getRow(i);
+
+      // Check if all relevant cells are empty to skip the row
+      const isRowEmpty = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].every(colNumber => {
+        const cell = row.getCell(colNumber);
+        // Consider cell empty if it's null, undefined, or just whitespace
+        return !cell.value || cell.value.toString().trim() === '';
+      });
+
+      if (isRowEmpty) {
+        console.log(`${logPrefix} Skipping empty row ${i}.`);
+        continue; // Go to the next iteration
+      }
+
       const rowData = [
         row.getCell(1).value, // customs
         row.getCell(2).value, // reference
