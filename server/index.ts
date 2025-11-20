@@ -314,42 +314,51 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
 
     await new Promise<void>((resolve, reject) => {
       db.serialize(() => {
-        // Drop the table to ensure schema changes are applied
-        db.run("DROP TABLE IF EXISTS machines");
-
-        // Re-create the table using the centralized function
-        initDB();
-
-        // Insert new data in a transaction
-        db.run("BEGIN TRANSACTION");
-        const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etb, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-
-        rowsToInsert.forEach((row) => {
-          stmt.run(row, (err) => {
-            if (err) {
-              console.error(`${logPrefix} Error inserting row:`, err);
-              db.run("ROLLBACK");
-              reject(err);
-            }
-          });
-        });
-
-        stmt.finalize((err) => {
+        // 1. Drop the old table
+        db.run("DROP TABLE IF EXISTS machines", (err) => {
           if (err) {
-            console.error(`${logPrefix} Error finalizing statement:`, err);
-            db.run("ROLLBACK");
-            reject(err);
-            return;
+            console.error(`${logPrefix} Error dropping table:`, err);
+            return reject(err);
           }
-          db.run("COMMIT", (commitErr) => {
-            if (commitErr) {
-              console.error(`${logPrefix} Error committing transaction:`, commitErr);
-              db.run("ROLLBACK");
-              reject(commitErr);
-            } else {
-              console.log(`${logPrefix} Transaction committed successfully. Inserted ${rowsToInsert.length} rows.`);
-              resolve();
+
+          // 2. Re-create the table on the same connection
+          db.run(CREATE_MACHINES_TABLE_SQL, (err) => {
+            if (err) {
+              console.error(`${logPrefix} Error re-creating table:`, err);
+              return reject(err);
             }
+
+            // 3. Insert new data in a transaction
+            db.run("BEGIN TRANSACTION");
+            const stmt = db.prepare(`INSERT INTO machines (customs, reference, machine, pn, etb, eta_port, eta_epiroc, ship, division, status, bl) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
+            rowsToInsert.forEach((row) => {
+              stmt.run(row, (err) => {
+                if (err) {
+                  console.error(`${logPrefix} Error inserting row:`, err);
+                  db.run("ROLLBACK"); // Rollback on error
+                  reject(err);
+                }
+              });
+            });
+
+            stmt.finalize((err) => {
+              if (err) {
+                console.error(`${logPrefix} Error finalizing statement:`, err);
+                db.run("ROLLBACK");
+                return reject(err);
+              }
+              db.run("COMMIT", (commitErr) => {
+                if (commitErr) {
+                  console.error(`${logPrefix} Error committing transaction:`, commitErr);
+                  db.run("ROLLBACK");
+                  reject(commitErr);
+                } else {
+                  console.log(`${logPrefix} Transaction committed successfully. Inserted ${rowsToInsert.length} rows.`);
+                  resolve();
+                }
+              });
+            });
           });
         });
       });
