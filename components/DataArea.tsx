@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Machine } from '../types';
-import { LayoutGrid, Table as TableIcon, Ship, MapPin, Anchor, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { LayoutGrid, Table as TableIcon, Ship, MapPin, Anchor, ArrowUpDown, ArrowUp, ArrowDown, FileSpreadsheet } from 'lucide-react';
 
 interface DataAreaProps {
   machines: Machine[];
@@ -98,6 +99,35 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
     setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleExport = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Machines');
+
+    // Headers
+    const headers = Object.entries(visibleColumns)
+      .filter(([, visible]) => visible)
+      .map(([key]) => t(`columns.${key}`));
+    worksheet.addRow(headers);
+
+    // Data
+    sortedMachines.forEach(machine => {
+      const row = Object.entries(visibleColumns)
+        .filter(([, visible]) => visible)
+        .map(([key]) => machine[key as keyof Machine]);
+      worksheet.addRow(row);
+    });
+
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'machines.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -134,6 +164,14 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
           <div className="relative group">
             <button className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1">
               {t('data.toggleCols')}
+            </button>
+          </div>
+            <button
+              onClick={handleExport}
+              className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1"
+            >
+              <FileSpreadsheet size={14} />
+              {t('data.export')}
             </button>
             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-epiroc-medium-grey shadow-xl rounded z-50 hidden group-hover:block p-2">
               {Object.keys(visibleColumns).map(col => (
