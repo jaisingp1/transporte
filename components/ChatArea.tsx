@@ -69,8 +69,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ onQuerySuccess, setIsLoading
 
       const data: QueryResponse = await response.json();
 
+      // Verificar que la respuesta tenga la estructura esperada
+      if (!data || !Array.isArray(data.data)) {
+        throw new Error('Invalid response format');
+      }
+
       // Add assistant message
-      const assistantContent = data.directAnswer || data.explanation || "Here are the results based on the database.";
+      const assistantContent = data.directAnswer || data.explanation || t('chat.defaultAssistantMessage');
       
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),

@@ -15,3 +15,4 @@ Rules:
 10. Status-related terms such as "ingresada", "origen", "puerto", "tránsito" (and their plurals or variants) refer to the 'status' column. Use case-insensitive matching via UPPER(status) = UPPER('...') or LIKE if needed.
 11. All text comparisons must be case-insensitive by using UPPER() on both the column and the search term.
 12. Never return JSON, explanations, or any text other than the raw SQL query.
+13. The SELECT statement MUST query the 'machines' table explicitly (e.g., SELECT * FROM machines ...). Never return queries like SELECT 1, SELECT 'test', or any expression that does not retrieve data from the 'machines' table. 
