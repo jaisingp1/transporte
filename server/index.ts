@@ -246,6 +246,17 @@ const excelDateToJSDate = (excelValue: any): string | null => {
   return null;
 };
 
+const sanitizePn = (pnValue: any): string | null => {
+  if (pnValue === null || pnValue === undefined) {
+    return null;
+  }
+  const pnString = String(pnValue);
+  if (pnString.endsWith('.0')) {
+    return pnString.slice(0, -2);
+  }
+  return pnString;
+};
+
 // --- Routes ---
 
 // 1. Admin Upload
@@ -288,7 +299,7 @@ app.post('/api/admin/upload', upload.single('file'), async (req, res) => {
         row.getCell(1).value, // customs
         row.getCell(2).value, // reference
         row.getCell(3).value || 'Unknown Machine', // machine
-        row.getCell(4).value, // pn
+        sanitizePn(row.getCell(4).value), // pn
         excelDateToJSDate(row.getCell(5).value), // etb
         excelDateToJSDate(row.getCell(6).value), // eta_port
         excelDateToJSDate(row.getCell(7).value), // eta_epiroc
