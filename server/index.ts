@@ -79,19 +79,7 @@ const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // --- Instructions for AI ---
-const SQL_INSTRUCTIONS = `
-You are a SQLite expert for a logistics tracking table named 'machines'.
-Schema:
-id (INT), customs (TEXT), reference (TEXT), machine (TEXT), pn (TEXT), etd (TEXT YYYY-MM-DD), eta_port (TEXT YYYY-MM-DD), eta_epiroc (TEXT YYYY-MM-DD), ship (TEXT), division (TEXT), status (TEXT), bl (TEXT).
-
-Rules:
-1. Return ONLY a raw SQL SELECT string. No Markdown formatting, no \`\`\`.
-2. Case insensitive comparisons (e.g. uses LIKE %...%).
-3. Never use UPDATE, DELETE, INSERT, DROP.
-4. If asking for specific machine name, search in 'machine' column.
-5. If asking for location/status, use 'status' or 'customs'.
-6. 'pn' is Part Number.
-`;
+const SQL_INSTRUCTIONS = fs.readFileSync(path.join(__dirname, 'sql_instructions.txt'), 'utf-8');
 
 // --- Helper Functions ---
 
@@ -276,13 +264,10 @@ app.post('/api/query', async (req, res) => {
       let directAnswer = null;
       
       if (rows.length > 0 && rows.length < 5) {
-        const contextPrompt = `
-        Data: ${JSON.stringify(rows)}
-        User Question: "${question}"
-        Language: ${lang}
-        
-        Task: Answer the user's question naturally based ONLY on the data provided. Be concise.
-        `;
+        let contextPrompt = fs.readFileSync(path.join(__dirname, 'context_prompt.txt'), 'utf-8');
+        contextPrompt = contextPrompt.replace('{{data}}', JSON.stringify(rows));
+        contextPrompt = contextPrompt.replace('{{question}}', question);
+        contextPrompt = contextPrompt.replace('{{lang}}', lang);
         
         const explanationResult = await model.generateContent(contextPrompt);
         const explanationResponse = explanationResult.response;
