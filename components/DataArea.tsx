@@ -165,20 +165,12 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
             <button className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1">
               {t('data.toggleCols')}
             </button>
-          </div>
-            <button
-              onClick={handleExport}
-              className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1"
-            >
-              <FileSpreadsheet size={14} />
-              {t('data.export')}
-            </button>
             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-epiroc-medium-grey shadow-xl rounded z-50 hidden group-hover:block p-2">
               {Object.keys(visibleColumns).map(col => (
                 <label key={col} className="flex items-center gap-2 p-1 hover:bg-epiroc-light-grey rounded cursor-pointer text-sm">
-                  <input 
-                    type="checkbox" 
-                    checked={visibleColumns[col as keyof typeof visibleColumns]} 
+                  <input
+                    type="checkbox"
+                    checked={visibleColumns[col as keyof typeof visibleColumns]}
                     onChange={() => toggleColumn(col as keyof typeof visibleColumns)}
                     className="rounded text-epiroc-yellow focus:ring-epiroc-yellow"
                   />
@@ -187,6 +179,14 @@ export const DataArea: React.FC<DataAreaProps> = ({ machines, isLoading, sql }) 
               ))}
             </div>
           </div>
+          <button
+            onClick={handleExport}
+            className="text-xs font-semibold uppercase tracking-wider text-epiroc-grey hover:text-epiroc-dark-blue flex items-center gap-1"
+          >
+            <FileSpreadsheet size={14} />
+            {t('data.export')}
+          </button>
+        </div>
 
           <div className="flex bg-epiroc-light-grey rounded p-0.5">
             <button 
