@@ -11,12 +11,14 @@ const resources = {
         lang: "Idioma"
       },
       chat: {
+        title: "Chat",
         placeholder: "Escribe tu consulta aquí... (ej. ¿Dónde está la CT2?)",
         welcome: "Hola. Soy tu asistente logístico. Pregúntame sobre el estado, ubicación o detalles de las máquinas.",
         thinking: "Procesando...",
         error: "Hubo un error al procesar tu solicitud.",
         defaultAssistantMessage: "Estos son los resultados basados en la base de datos.",
-        send: "Enviar"
+        send: "Enviar",
+        reset: "Reiniciar"
       },
       data: {
         noData: "No hay datos seleccionados",
@@ -58,12 +60,14 @@ const resources = {
         lang: "Language"
       },
       chat: {
+        title: "Chat",
         placeholder: "Type your query here... (e.g., Where is the CT2?)",
         welcome: "Hello. I am your logistics assistant. Ask me about machine status, location, or details.",
         thinking: "Thinking...",
         error: "There was an error processing your request.",
         defaultAssistantMessage: "Here are the results based on the database.",
-        send: "Send"
+        send: "Send",
+        reset: "Reset"
       },
       data: {
         noData: "No data selected",
@@ -105,12 +109,14 @@ const resources = {
         lang: "Língua"
       },
       chat: {
+        title: "Chat",
         placeholder: "Digite sua consulta aqui... (ex: Onde está o CT2?)",
         welcome: "Olá. Sou seu assistente de logística. Pergunte-me sobre o status, localização ou detalhes das máquinas.",
         thinking: "Pensando...",
         error: "Ocorreu um erro ao processar sua solicitação.",
         defaultAssistantMessage: "Aqui estão os resultados com base no banco de dados.",
-        send: "Enviar"
+        send: "Enviar",
+        reset: "Reiniciar"
       },
       data: {
         noData: "Nenhum dado selecionado",
@@ -152,12 +158,14 @@ const resources = {
         lang: "Språk"
       },
       chat: {
+        title: "Chat", // Changed from "Chatt" to "Chat" for consistency
         placeholder: "Skriv din fråga här... (t.ex. Var är CT2?)",
         welcome: "Hej. Jag är din logistikassistent. Fråga mig om maskinstatus, plats eller detaljer.",
         thinking: "Tänker...",
         error: "Det uppstod ett fel när din begäran behandlades.",
         defaultAssistantMessage: "Här är resultaten baserade på databasen.",
-        send: "Skicka"
+        send: "Skicka",
+        reset: "Återställa"
       },
       data: {
         noData: "Inga data valda",
@@ -179,14 +187,6 @@ const resources = {
         etd: "ETD",
         bl: "BL",
         division: "Division"
-      },
-      admin: {
-        title: "Dataadministration",
-        dropzone: "Dra din Excel-fil (.xlsx) hit eller klicka för att välja",
-        uploading: "Laddar upp...",
-        success: "Databasen uppdaterades framgångsrikt.",
-        error: "Uppdateringen misslyckades. Kontrollera format eller token.",
-        tokenPlaceholder: "Ange Admin Token"
       }
     }
   }
