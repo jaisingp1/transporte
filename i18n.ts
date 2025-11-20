@@ -21,7 +21,8 @@ const resources = {
         total: "Total encontrados",
         toggleCols: "Columnas",
         cardView: "Vista Ficha",
-        tableView: "Vista Tabla"
+        tableView: "Vista Tabla",
+        export: "Exportar a Excel"
       },
       columns: {
         machine: "Máquina",
@@ -65,7 +66,8 @@ const resources = {
         total: "Total found",
         toggleCols: "Columns",
         cardView: "Card View",
-        tableView: "Table View"
+        tableView: "Table View",
+        export: "Export to Excel"
       },
       columns: {
         machine: "Machine",
@@ -109,7 +111,8 @@ const resources = {
         total: "Total encontrado",
         toggleCols: "Colunas",
         cardView: "Vista de Cartão",
-        tableView: "Vista de Tabela"
+        tableView: "Vista de Tabela",
+        export: "Exportar para Excel"
       },
       columns: {
         machine: "Máquina",
@@ -153,7 +156,8 @@ const resources = {
         total: "Totalt hittades",
         toggleCols: "Kolumner",
         cardView: "Kortvy",
-        tableView: "Tabellvy"
+        tableView: "Tabellvy",
+        export: "Exportera till Excel"
       },
       columns: {
         machine: "Maskin",
